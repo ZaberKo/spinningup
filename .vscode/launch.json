@@ -13,10 +13,10 @@
             "justMyCode": true
         },
         {
-            "name": "SAC-GPU",
+            "name": "SAC",
             "type": "python",
             "request": "launch",
-            "module": "spinup.algos.pytorch.sac.sac-gpu",
+            "module": "spinup.algos.pytorch.sac.sac",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": ["--env", "HalfCheetah-v3", "--epochs", "250"]

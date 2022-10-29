@@ -1,10 +1,12 @@
-#%%
+# %%
 import matplotlib.pyplot as plt
 import pandas as pd
 import os
 import numpy as np
 
 from pathlib import Path
+
+
 def smooth(y, radius, mode='two_sided', valid_only=False):
     '''Smooth signal y, where radius is determines the size of the window.
 
@@ -34,30 +36,87 @@ def smooth(y, radius, mode='two_sided', valid_only=False):
 
 
 def plot(path, r=0):
-    df=pd.read_csv(os.path.join(path,"progress.txt"),delimiter="\t")
-    plt.plot(dpi=300,figsize=(300,600))
-    plt.plot(df["Epoch"],smooth(df["AverageTestEpRet"],r),label="return",lw=0.4)
-    plt.fill_between(df["Epoch"],df["MinTestEpRet"],df["MaxTestEpRet"],alpha=0.2)
+    df = pd.read_csv(os.path.join(path, "progress.txt"), delimiter="\t")
+    plt.plot(dpi=300, figsize=(300, 600))
+    smoothed_return = smooth(df["AverageTestEpRet"], r)
+    smoothed_std = smooth(df["StdTestEpRet"], r)
+    plt.plot(df["Epoch"], smoothed_return,
+             label="return", lw=0.4)
+    plt.fill_between(df["Epoch"], smoothed_return-smoothed_std,
+                     smoothed_return+smoothed_std, alpha=0.2)
     plt.legend()
     plt.show()
 
-def plot_all(path, r=0):
-    
-    plt.plot(dpi=300,figsize=(300,600))
+
+def plot_all(path, r=0, plot_avg=True):
+
+    plt.plot(dpi=300, figsize=(300, 600))
+    eval_return_arr = []
     for exp_path in Path(path).expanduser().iterdir():
         print(exp_path)
-        df=pd.read_csv(os.path.join(exp_path,"progress.txt"),delimiter="\t")
-        plt.plot(df["Epoch"],smooth(df["AverageTestEpRet"],r),lw=0.4)
-        plt.fill_between(df["Epoch"],smooth(df["MinTestEpRet"],r),smooth(df["MaxTestEpRet"],r),alpha=0.2)
-    plt.legend()
+        df = pd.read_csv(os.path.join(
+            exp_path, "progress.txt"), delimiter="\t")
+
+        eval_return_arr.append(df["AverageTestEpRet"])
+        smoothed_return = smooth(df["AverageTestEpRet"], r)
+        smoothed_std = smooth(df["StdTestEpRet"], r)
+        plt.plot(df["Epoch"], smoothed_return, lw=0.4)
+        # plt.fill_between(df["Epoch"],smooth(df["MinTestEpRet"],r),smooth(df["MaxTestEpRet"],r),alpha=0.2)
+        plt.fill_between(df["Epoch"], smoothed_return-smoothed_std,
+                         smoothed_return+smoothed_std, alpha=0.2)
+    _min_len = min([len(d) for d in eval_return_arr])
+    avg_return = np.array([d[:_min_len] for d in eval_return_arr]).mean(axis=0)
+    smoothed_avg_return = smooth(avg_return, r)
+    # plt.plot(np.arange(1, len(smoothed_avg_return)+1), smoothed_avg_return)
+    # plt.legend()
     plt.show()
-#%%
-path="~/workspace/spinningup/data/sac-gpu-hopper/sac-gpu_s0"
-plot(path)
+    
+    if plot_avg:
+        plt.plot(dpi=300, figsize=(300, 600))
+        plt.plot(np.arange(1, len(smoothed_avg_return)+1), smoothed_avg_return)
+        plt.show()
+
+def plot_all_alpha(path, r=0):
+
+    plt.plot(dpi=300, figsize=(300, 600))
+
+    for exp_path in Path(path).expanduser().iterdir():
+        print(exp_path)
+        df = pd.read_csv(os.path.join(
+            exp_path, "progress.txt"), delimiter="\t")
+
+        plt.plot(df["Epoch"], smooth(df["Alpha"],r), lw=0.4)
+
+    plt.show()
+
+
+
 # %%
-path="~/workspace/spinningup/data/td3-hopper"
-plot_all(path,r=5)
+path = "~/workspace/spinningup/data/sac-gpu-hopper/sac-gpu_s0"
+plot(path,r=2)
 # %%
-path="~/workspace/spinningup/data/td3-ant"
-plot_all(path,r=5)
+path = "~/workspace/spinningup/data/td3-hopper"
+plot_all(path, r=5)
+# %%
+path = "~/workspace/spinningup/data/td3-ant"
+plot_all(path, r=2)
+# %%
+path = "~/workspace/spinningup/data/td3-mod-ant"
+plot_all(path, r=2)
+# %%
+path = "~/workspace/spinningup/data/td3-mod-ant2"
+plot_all(path, r=2)
+# %%
+path = "~/workspace/spinningup/data/sac-ant"
+plot_all(path, r=2)
+# %%
+path = "~/workspace/spinningup/data/sac-alpha-hopper"
+plot_all(path, r=0)
+# %%
+path = "~/workspace/spinningup/data/sac-alpha-hopper2"
+plot_all(path, r=0)
+# %%
+path = "~/workspace/spinningup/data/sac-alpha-hopper3"
+plot_all(path, r=0, plot_avg=False)
+plot_all_alpha(path, r=0)
 # %%

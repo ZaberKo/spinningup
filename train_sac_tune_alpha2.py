@@ -1,7 +1,7 @@
 import argparse
 import multiprocessing as mp
 import gym
-from spinup.algos.pytorch.td3 import td3_mod
+from spinup.algos.pytorch.sac import sac_tune_alpha2
 import torch
 
 def main(args):
@@ -10,14 +10,13 @@ def main(args):
     def run(seed):
         logger_kwargs = setup_logger_kwargs(args.exp_name, seed)
 
-        # cpus=mp.cpu_count()//args.num_tests
-        cpus=4
+        cpus=mp.cpu_count()//args.num_tests
         print(f"seed: {seed} cpu_usage: {cpus}")
         torch.set_num_threads(cpus)
-        td3_mod.td3(lambda : gym.make(args.env), actor_critic=td3_mod.core.MLPActorCritic,
-        ac_kwargs=dict(hidden_sizes=[400,300]), 
-        gamma=args.gamma, seed=args.seed, epochs=args.epochs,
-        logger_kwargs=logger_kwargs)
+        sac_tune_alpha2.sac(lambda: gym.make(args.env), actor_critic=sac_tune_alpha2.core.MLPActorCritic2,
+                ac_kwargs=dict(hidden_sizes=[args.hid]*args.l),
+                gamma=args.gamma, seed=args.seed, epochs=args.epochs,
+                logger_kwargs=logger_kwargs)
 
     processes = [
         mp.Process(target=run, args=(args.seed+i,))
