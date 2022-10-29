@@ -252,7 +252,7 @@ def sac(env_fn, actor_critic=core.MLPActorCritic2, ac_kwargs=dict(), seed=0,
         # First run one gradient descent step for Q1 and Q2
         loss_q, q_info = compute_loss_q(data)
         loss_pi, pi_info = compute_loss_pi(data)
-        loss_alpha, alpha_info = compute_loss_alpha(data)
+        # loss_alpha, alpha_info = compute_loss_alpha(data)
 
         # Freeze Q-networks so you don't waste computational effort 
         # computing gradients for them during the policy learning step.
@@ -277,11 +277,11 @@ def sac(env_fn, actor_critic=core.MLPActorCritic2, ac_kwargs=dict(), seed=0,
         # Record things
         logger.store(LossQ=loss_q.item(), **q_info)
 
-        alpha_optimizer.zero_grad()
-        loss_alpha.backward()
-        alpha_optimizer.step()
+        # alpha_optimizer.zero_grad()
+        # loss_alpha.backward()
+        # alpha_optimizer.step()
 
-        logger.store(LossAlpha=loss_alpha.item(), **alpha_info)
+        # logger.store(LossAlpha=loss_alpha.item(), **alpha_info)
 
         # Finally, update target networks by polyak averaging.
         with torch.no_grad():
@@ -372,8 +372,8 @@ def sac(env_fn, actor_critic=core.MLPActorCritic2, ac_kwargs=dict(), seed=0,
             logger.log_tabular('LogPi', with_min_and_max=True)
             logger.log_tabular('LossPi', average_only=True)
             logger.log_tabular('LossQ', average_only=True)
-            logger.log_tabular('Alpha' ,average_only=True)
-            logger.log_tabular('LossAlpha', average_only=True)
+            # logger.log_tabular('Alpha' ,average_only=True)
+            # logger.log_tabular('LossAlpha', average_only=True)
             logger.log_tabular('Time', time.time()-start_time)
             logger.dump_tabular()
 
