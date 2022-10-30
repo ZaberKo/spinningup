@@ -232,24 +232,16 @@ def sac(env_fn, actor_critic=core.MLPActorCritic, ac_kwargs=dict(), seed=0,
         loss_q, q_info = compute_loss_q(data)
         loss_pi, pi_info = compute_loss_pi(data)
 
-        # Freeze Q-networks so you don't waste computational effort 
-        # computing gradients for them during the policy learning step.
-        for p in q_params:
-            p.requires_grad = False
 
         # Next run one gradient descent step for pi.
         pi_optimizer.zero_grad()
-        
         loss_pi.backward()
-        pi_optimizer.step()
-
-        # Unfreeze Q-networks so you can optimize it at next DDPG step.
-        for p in q_params:
-            p.requires_grad = True
 
         # First run one gradient descent step for Q1 and Q2
         q_optimizer.zero_grad()        
         loss_q.backward()
+
+        pi_optimizer.step()
         q_optimizer.step()
 
         # Record things

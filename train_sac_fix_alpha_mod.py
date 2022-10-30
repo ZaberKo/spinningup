@@ -10,7 +10,7 @@ def main(args):
     def run(seed):
         logger_kwargs = setup_logger_kwargs(args.exp_name, seed)
 
-        cpus=cpus=mp.cpu_count()//args.num_tests
+        cpus=12
         print(f"seed: {seed} cpu_usage: {cpus}")
         torch.set_num_threads(cpus)
         sac_fix_alpha_mod.sac(lambda: gym.make(args.env), actor_critic=sac_fix_alpha_mod.core.MLPActorCritic2,
