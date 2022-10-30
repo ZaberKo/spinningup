@@ -254,34 +254,25 @@ def sac(env_fn, actor_critic=core.MLPActorCritic2, ac_kwargs=dict(), seed=0,
         loss_pi, pi_info = compute_loss_pi(data)
         loss_alpha, alpha_info = compute_loss_alpha(data)
 
-        # Freeze Q-networks so you don't waste computational effort 
-        # computing gradients for them during the policy learning step.
-        for p in q_params:
-            p.requires_grad = False
-
         # Next run one gradient descent step for pi.
         pi_optimizer.zero_grad()
         loss_pi.backward()
-        pi_optimizer.step()
-
-        # Unfreeze Q-networks so you can optimize it at next DDPG step.
-        for p in q_params:
-            p.requires_grad = True
+        
         # Record things
-        logger.store(LossPi=loss_pi.item(), **pi_info)
-
         q_optimizer.zero_grad()
         loss_q.backward()
-        q_optimizer.step()
-
+        
         # Record things
-        logger.store(LossQ=loss_q.item(), **q_info)
-
         alpha_optimizer.zero_grad()
         loss_alpha.backward()
-        alpha_optimizer.step()
 
+        logger.store(LossPi=loss_pi.item(), **pi_info)
+        logger.store(LossQ=loss_q.item(), **q_info)
         logger.store(LossAlpha=loss_alpha.item(), **alpha_info)
+
+        pi_optimizer.step()
+        q_optimizer.step()
+        alpha_optimizer.step()
 
         # Finally, update target networks by polyak averaging.
         with torch.no_grad():
