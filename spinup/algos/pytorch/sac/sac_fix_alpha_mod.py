@@ -42,9 +42,9 @@ class ReplayBuffer:
 
 
 
-def sac(env_fn, actor_critic=core.MLPActorCritic2, ac_kwargs=dict(), seed=0, 
+def sac(env_fn, actor_critic=core.MLPActorCritic, ac_kwargs=dict(), seed=0, 
         steps_per_epoch=4000, epochs=100, replay_size=int(1e6), gamma=0.99, 
-        polyak=0.995, lr=1e-3, init_alpha=1, batch_size=100, start_steps=10000, 
+        polyak=0.995, lr=1e-3, alpha=0.2, batch_size=100, start_steps=10000, 
         update_after=1000, update_every=50, num_test_episodes=10, max_ep_len=1000, 
         logger_kwargs=dict(), save_freq=1):
     """
@@ -157,10 +157,8 @@ def sac(env_fn, actor_critic=core.MLPActorCritic2, ac_kwargs=dict(), seed=0,
     # Action limit for clamping: critically, assumes all dimensions share the same bound!
     act_limit = env.action_space.high[0]
 
-    target_entropy = torch.tensor(-act_dim, dtype=torch.float32)
-
     # Create actor-critic module and target networks
-    ac = actor_critic(env.observation_space, env.action_space, init_alpha=init_alpha,**ac_kwargs)
+    ac = actor_critic(env.observation_space, env.action_space, **ac_kwargs)
     ac_targ = deepcopy(ac)
 
     # Freeze target networks with respect to optimizers (only update via polyak averaging)
@@ -168,7 +166,8 @@ def sac(env_fn, actor_critic=core.MLPActorCritic2, ac_kwargs=dict(), seed=0,
         p.requires_grad = False
         
     # List of parameters for both Q-networks (save this for convenience)
-    q_params = itertools.chain(ac.q1.parameters(), ac.q2.parameters())
+    q_params = list(ac.q1.parameters()) +  list(ac.q2.parameters())
+    q_targ_params = list(ac_targ.q1.parameters()) + list(ac_targ.q2.parameters())
 
     # Experience buffer
     replay_buffer = ReplayBuffer(obs_dim=obs_dim, act_dim=act_dim, size=replay_size)
@@ -184,14 +183,10 @@ def sac(env_fn, actor_critic=core.MLPActorCritic2, ac_kwargs=dict(), seed=0,
         q1 = ac.q1(o,a)
         q2 = ac.q2(o,a)
 
-        
-
         # Bellman backup for Q functions
         with torch.no_grad():
             # Target actions come from *current* policy
             a2, logp_a2 = ac.pi(o2)
-
-            alpha=torch.exp(ac.log_alpha)
 
             # Target Q-values
             q1_pi_targ = ac_targ.q1(o2, a2)
@@ -218,7 +213,6 @@ def sac(env_fn, actor_critic=core.MLPActorCritic2, ac_kwargs=dict(), seed=0,
         q2_pi = ac.q2(o, pi)
         q_pi = torch.min(q1_pi, q2_pi)
 
-        alpha=torch.exp(ac.log_alpha).detach()
         # Entropy-regularized policy loss
         loss_pi = (alpha * logp_pi - q_pi).mean()
 
@@ -227,32 +221,16 @@ def sac(env_fn, actor_critic=core.MLPActorCritic2, ac_kwargs=dict(), seed=0,
 
         return loss_pi, pi_info
 
-    def compute_loss_alpha(data):
-        with torch.no_grad():
-            o = data['obs']
-            pi, logp_pi = ac.pi(o)
-
-        
-        loss_alpha= - torch.mean(ac.log_alpha*(logp_pi+target_entropy).detach())
-        # loss_alpha = - torch.mean(torch.exp(ac.log_alpha)*(logp_pi+target_entropy).detach())
-
-        alpha_info = dict(Alpha=torch.exp(ac.log_alpha).detach().item())
-
-        return loss_alpha, alpha_info
-
     # Set up optimizers for policy and q-function
     pi_optimizer = Adam(ac.pi.parameters(), lr=lr)
     q_optimizer = Adam(q_params, lr=lr)
-    alpha_optimizer = Adam([ac.log_alpha], lr=lr)
 
     # Set up model saving
     logger.setup_pytorch_saver(ac)
 
     def update(data):
-        # First run one gradient descent step for Q1 and Q2
         loss_q, q_info = compute_loss_q(data)
         loss_pi, pi_info = compute_loss_pi(data)
-        # loss_alpha, alpha_info = compute_loss_alpha(data)
 
         # Freeze Q-networks so you don't waste computational effort 
         # computing gradients for them during the policy learning step.
@@ -261,31 +239,29 @@ def sac(env_fn, actor_critic=core.MLPActorCritic2, ac_kwargs=dict(), seed=0,
 
         # Next run one gradient descent step for pi.
         pi_optimizer.zero_grad()
+        
         loss_pi.backward()
         pi_optimizer.step()
 
         # Unfreeze Q-networks so you can optimize it at next DDPG step.
         for p in q_params:
             p.requires_grad = True
-        # Record things
-        logger.store(LossPi=loss_pi.item(), **pi_info)
 
-        q_optimizer.zero_grad()
+        # First run one gradient descent step for Q1 and Q2
+        q_optimizer.zero_grad()        
         loss_q.backward()
         q_optimizer.step()
 
         # Record things
         logger.store(LossQ=loss_q.item(), **q_info)
 
-        # alpha_optimizer.zero_grad()
-        # loss_alpha.backward()
-        # alpha_optimizer.step()
-
-        # logger.store(LossAlpha=loss_alpha.item(), **alpha_info)
+        # Record things
+        logger.store(LossPi=loss_pi.item(), **pi_info)
 
         # Finally, update target networks by polyak averaging.
         with torch.no_grad():
-            for p, p_targ in zip(ac.q_variables(), ac_targ.q_variables()):
+            for p, p_targ in zip(q_params, q_targ_params):
+            # for p, p_targ in zip(ac.parameters(), ac_targ.parameters()):
                 # NB: We use an in-place operations "mul_", "add_" to update target
                 # params, as opposed to "mul" and "add", which would make new tensors.
                 p_targ.data.mul_(polyak)
@@ -372,8 +348,6 @@ def sac(env_fn, actor_critic=core.MLPActorCritic2, ac_kwargs=dict(), seed=0,
             logger.log_tabular('LogPi', with_min_and_max=True)
             logger.log_tabular('LossPi', average_only=True)
             logger.log_tabular('LossQ', average_only=True)
-            # logger.log_tabular('Alpha' ,average_only=True)
-            # logger.log_tabular('LossAlpha', average_only=True)
             logger.log_tabular('Time', time.time()-start_time)
             logger.dump_tabular()
 

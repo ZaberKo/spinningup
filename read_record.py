@@ -120,3 +120,14 @@ path = "~/workspace/spinningup/data/sac-alpha-hopper3"
 plot_all(path, r=0, plot_avg=False)
 plot_all_alpha(path, r=0)
 # %%
+path = "~/workspace/spinningup/data/sac-alpha-mod-hopper"
+plot_all(path, r=0, plot_avg=False)
+plot_all_alpha(path, r=0)
+# %%
+path = "~/workspace/spinningup/data/sac-alpha-mod-hopper1"
+plot_all(path, r=0, plot_avg=False)
+plot_all_alpha(path, r=0)
+# %%
+path = "~/workspace/spinningup/data/sac-fix-alpha-mod-hopper-new"
+plot_all(path, r=0, plot_avg=False)
+# %%

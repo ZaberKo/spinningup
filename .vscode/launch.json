@@ -16,7 +16,7 @@
             "name": "SAC",
             "type": "python",
             "request": "launch",
-            "module": "spinup.algos.pytorch.sac.sac",
+            "module": "spinup.algos.pytorch.sac.sac_fix_alpha_mod",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": ["--env", "HalfCheetah-v3", "--epochs", "250"]
