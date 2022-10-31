@@ -10,12 +10,13 @@ def main(args):
     def run(seed):
         logger_kwargs = setup_logger_kwargs(args.exp_name, seed)
 
-        cpus=12
+        cpus=16
         print(f"seed: {seed} cpu_usage: {cpus}")
         torch.set_num_threads(cpus)
         sac_fix_alpha_mod.sac(lambda: gym.make(args.env), actor_critic=sac_fix_alpha_mod.core.MLPActorCritic2,
                 ac_kwargs=dict(hidden_sizes=[args.hid]*args.l),
                 gamma=args.gamma, seed=args.seed, epochs=args.epochs,
+                batch_size=args.bs,
                 logger_kwargs=logger_kwargs)
 
     processes = [
@@ -41,6 +42,7 @@ if __name__ == "__main__":
     parser.add_argument('--epochs', type=int, default=50)
     parser.add_argument('--exp_name', type=str, default='sac')
     parser.add_argument('--num_tests', type=int, default=1)
+    parser.add_argument('--bs', type=int, default=100)
     args = parser.parse_args()
 
     main(args)
