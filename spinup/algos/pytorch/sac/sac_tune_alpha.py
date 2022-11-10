@@ -233,8 +233,7 @@ def sac(env_fn, actor_critic=core.MLPActorCritic2, ac_kwargs=dict(), seed=0,
             pi, logp_pi = ac.pi(o)
 
         
-        # loss_alpha= - torch.mean(ac.log_alpha*(logp_pi+target_entropy).detach())
-        loss_alpha = - torch.mean(torch.exp(ac.log_alpha)*(logp_pi+target_entropy).detach())
+        loss_alpha= - torch.mean(ac.log_alpha*(logp_pi+target_entropy))
 
         alpha_info = dict(Alpha=torch.exp(ac.log_alpha).detach().item())
 
@@ -285,7 +284,7 @@ def sac(env_fn, actor_critic=core.MLPActorCritic2, ac_kwargs=dict(), seed=0,
 
         # Finally, update target networks by polyak averaging.
         with torch.no_grad():
-            for p, p_targ in zip(ac.q_variables(), ac_targ.q_variables()):
+            for p, p_targ in zip(ac.parameters(), ac_targ.parameters()):
                 # NB: We use an in-place operations "mul_", "add_" to update target
                 # params, as opposed to "mul" and "add", which would make new tensors.
                 p_targ.data.mul_(polyak)

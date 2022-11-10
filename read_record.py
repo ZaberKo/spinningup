@@ -37,7 +37,7 @@ def smooth(y, radius, mode='two_sided', valid_only=False):
 
 def plot(path, r=0):
     df = pd.read_csv(os.path.join(path, "progress.txt"), delimiter="\t")
-    plt.plot(dpi=300, figsize=(300, 600))
+    plt.plot(dpi=300, figsize=(3, 9))
     smoothed_return = smooth(df["AverageTestEpRet"], r)
     smoothed_std = smooth(df["StdTestEpRet"], r)
     plt.plot(df["Epoch"], smoothed_return,
@@ -50,7 +50,7 @@ def plot(path, r=0):
 
 def plot_all(path, r=0, plot_avg=True):
 
-    plt.plot(dpi=300, figsize=(300, 600))
+    plt.plot(dpi=300, figsize=(3, 9))
     eval_return_arr = []
     for exp_path in Path(path).expanduser().iterdir():
         print(exp_path)
@@ -72,13 +72,13 @@ def plot_all(path, r=0, plot_avg=True):
     plt.show()
     
     if plot_avg:
-        plt.plot(dpi=300, figsize=(300, 600))
+        plt.plot(dpi=300, figsize=(3, 9))
         plt.plot(np.arange(1, len(smoothed_avg_return)+1), smoothed_avg_return)
         plt.show()
 
 def plot_all_alpha(path, r=0):
 
-    plt.plot(dpi=300, figsize=(300, 600))
+    plt.plot(dpi=300, figsize=(3, 9))
 
     for exp_path in Path(path).expanduser().iterdir():
         print(exp_path)
@@ -91,43 +91,8 @@ def plot_all_alpha(path, r=0):
 
 
 
+
 # %%
-path = "~/workspace/spinningup/data/sac-gpu-hopper/sac-gpu_s0"
-plot(path,r=2)
-# %%
-path = "~/workspace/spinningup/data/td3-hopper"
-plot_all(path, r=5)
-# %%
-path = "~/workspace/spinningup/data/td3-ant"
+path = "~/workspace/workspace/spinningup/data/sac-fix-mod-hopper-256"
 plot_all(path, r=2)
-# %%
-path = "~/workspace/spinningup/data/td3-mod-ant"
-plot_all(path, r=2)
-# %%
-path = "~/workspace/spinningup/data/td3-mod-ant2"
-plot_all(path, r=2)
-# %%
-path = "~/workspace/spinningup/data/sac-ant"
-plot_all(path, r=2)
-# %%
-path = "~/workspace/spinningup/data/sac-alpha-hopper"
-plot_all(path, r=0)
-# %%
-path = "~/workspace/spinningup/data/sac-alpha-hopper2"
-plot_all(path, r=0)
-# %%
-path = "~/workspace/spinningup/data/sac-alpha-hopper3"
-plot_all(path, r=0, plot_avg=False)
-plot_all_alpha(path, r=0)
-# %%
-path = "~/workspace/spinningup/data/sac-alpha-mod-hopper"
-plot_all(path, r=0, plot_avg=False)
-plot_all_alpha(path, r=0)
-# %%
-path = "~/workspace/spinningup/data/sac-alpha-mod-hopper1"
-plot_all(path, r=0, plot_avg=False)
-plot_all_alpha(path, r=0)
-# %%
-path = "~/workspace/spinningup/data/sac-fix-alpha-mod-hopper-new"
-plot_all(path, r=0, plot_avg=False)
 # %%
