@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import os
 import numpy as np
+import plotly.express as px
+import plotly.graph_objects as go
 
 from pathlib import Path
 
@@ -87,3 +89,47 @@ def plot_all_alpha(path, r=0):
         plt.plot(df["Epoch"], smooth(df["Alpha"],r), lw=0.4)
 
     plt.show()
+
+
+def plotly_plot_all(path, r=0, plot_avg=True):
+    eval_return_arr = []
+    fig=go.Figure()
+    colors=px.colors.qualitative.Plotly
+    i =0
+    for exp_path in Path(path).expanduser().iterdir():
+        print(exp_path)
+        df = pd.read_csv(os.path.join(
+            exp_path, "progress.txt"), delimiter="\t")
+
+        eval_return_arr.append(df["AverageTestEpRet"])
+        smoothed_return = smooth(df["AverageTestEpRet"], r)
+        
+        smoothed_std = smooth(df["StdTestEpRet"], r)
+
+        color=colors[i]
+        
+        fig.add_scatter(
+            x=df["Epoch"], y=smoothed_return, line_color=color,
+            name=f"exp{i}"
+        )
+
+        fig.add_scatter(
+            x=pd.concat([df["Epoch"], df["Epoch"][::-1]]),
+            y=np.concatenate([smoothed_return+smoothed_std, (smoothed_return-smoothed_std)[::-1]]),
+            fill="toself",
+            fillcolor=color,
+            opacity=0.2,
+            line_color='rgba(255,255,255,0)',
+            showlegend=False,
+        )
+        i+=1
+    fig.update_layout(xaxis=dict(title="epoch", dtick=50),yaxis=dict(title="epoch"), showlegend=True)
+    fig.show()
+    
+    if plot_avg:
+        _min_len = min([len(d) for d in eval_return_arr])
+        avg_return = np.array([d[:_min_len] for d in eval_return_arr]).mean(axis=0)
+        smoothed_avg_return = smooth(avg_return, r)
+        fig=px.line(x=np.arange(1, len(smoothed_avg_return)+1), y=smoothed_avg_return)
+        fig.update_layout(xaxis=dict(title="epoch", dtick=50),yaxis=dict(title="epoch"), showlegend=True)
+        fig.show()
